@@ -75,10 +75,15 @@ class BlogController extends Controller
 
         $categories = Category::all();
 
+        $category_with_post_count= Category::withCount(['blogs' => function ($query) {
+            $query->where('status', 1); 
+        }])
+        ->get();
+
         return response()->json([
             'status' => true,
             'message' => 'Blog Posts filtered by category.',
-            'data' => compact('filtered_posts', 'recentPost', 'categories'),
+            'data' => compact('filtered_posts', 'recentPost', 'categories','category_with_post_count',),
         ]);
     }
 
