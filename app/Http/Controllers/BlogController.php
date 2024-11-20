@@ -48,7 +48,7 @@ class BlogController extends Controller
             ->select('blogs.*', 'categories.name as category_name')
             ->where('blogs.id', $id)
             ->first()
-            ->paginate(3);
+            ->paginate(8);
     
         return response()->json([
             'status' => true,
