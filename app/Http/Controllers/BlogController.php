@@ -24,13 +24,13 @@ class BlogController extends Controller
             ->select('blogs.*', 'categories.name as category_name')
             ->where('blogs.status', 1)
             ->orderby('blogs.id', 'desc')
-            ->paginate(5);
+            ->paginate(8);
 
         $recentPost = Blog::join('categories', 'categories.id', '=', 'blogs.category_id')
             ->select('blogs.*', 'categories.name as category_name')
             ->where('blogs.status', 1)
             ->orderby('blogs.id', 'desc')
-            ->limit(3)
+            ->limit(8)
             ->get();
 
         $categories = Category::all();
@@ -48,7 +48,7 @@ class BlogController extends Controller
             ->select('blogs.*', 'categories.name as category_name')
             ->where('blogs.id', $id)
             ->first()
-            ->paginate(3);
+            ->paginate(8);
     
         return response()->json([
             'status' => true,
