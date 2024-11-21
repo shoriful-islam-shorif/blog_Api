@@ -32,9 +32,11 @@ class CategoryController extends Controller
          */
         public function store(Request $request)
         {
+           // return $request->all();
             $request->validate([
-                'name' => 'required|unique:categories,name|max:255',
+                'name' => 'required',
             ]);
+            
     
             $data = [
                 'name' => $request->name,
