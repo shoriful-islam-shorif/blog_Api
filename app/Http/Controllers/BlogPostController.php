@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Blog;
+use Illuminate\Support\Str;
 use App\Models\Category;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -54,7 +55,7 @@ class BlogPostController extends Controller
            'custom_url' => 'nullable|url|max:255',
             'category_id' => 'required',
             'content' => 'required',
-            'thumbnail' => 'nullable|image|mimes:jpg,jpeg,png,gif|max:2048',
+            'thumbnail' => 'required|image|mimes:jpg,jpeg,png,gif|max:2048',
              'status' => 'required|in:0,1',
         ]);
 
@@ -68,6 +69,14 @@ class BlogPostController extends Controller
             'status' => $request->status,
             
         ];
+
+    // Handle the custom URL
+    if ($request->custom_url) {
+        $data['custom_url'] = $this->generateUniqueCustomUrl($request->custom_url);
+    } else {
+        // Generate custom URL from the title if not provided
+        $data['custom_url'] = $this->generateUniqueCustomUrl(Str::slug($request->title));
+    }
        
 
        // Handle the thumbnail file upload
@@ -111,6 +120,20 @@ class BlogPostController extends Controller
         ], 500);
     }
     }
+
+    private function generateUniqueCustomUrl($customUrl)
+{
+    $baseUrl = Str::slug($customUrl);
+    $uniqueUrl = $baseUrl;
+    $counter = 1;
+
+    while (Blog::where('custom_url', $uniqueUrl)->exists()) {
+        $uniqueUrl = $baseUrl . '-' . $counter;
+        $counter++;
+    }
+
+    return $uniqueUrl;
+}
 
     /**
      * Update the specified resource in storage.
