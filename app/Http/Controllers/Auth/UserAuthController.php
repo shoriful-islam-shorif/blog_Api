@@ -13,60 +13,48 @@ use Illuminate\Support\Facades\Validator;
 
 class UserAuthController extends Controller
 {
-    public function createUser(Request $request)
-    {
-       // return $request->all();
-        try {
+    // public function createUser(Request $request)
+    // {
+    //    // return $request->all();
+    //     try {
         
-            $validateUser=Validator::make($request->all(),[
-                'name'=>'required',
-                'email'=>'required|email|unique:Users,email',
-                'password'=>'required'
+    //         $validateUser=Validator::make($request->all(),[
+    //             'name'=>'required',
+    //             'email'=>'required|email|unique:users,email',
+    //             'password'=>'required'
             
-            ]);
-            if($validateUser->fails()){
-                return response()->json([
-                    'status'=>false,
-                    'message'=>'validation error',
-                    'errors'=>$validateUser->errors()
-                ],401);
-            }
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password)
-            ]);
+    //         ]);
+    //         if($validateUser->fails()){
+    //             return response()->json([
+    //                 'status'=>false,
+    //                 'message'=>'validation error',
+    //                 'errors'=>$validateUser->errors()
+    //             ],401);
+    //         }
+    //         $user = User::create([
+    //             'name' => $request->name,
+    //             'email' => $request->email,
+    //             'password' => Hash::make($request->password)
+    //         ]);
 
-            return response()->json([
-                'status' => true,
-                'message' => 'User Created Successfully',
-                //'token' => $user->createToken("API TOKEN")->plainTextToken
-            ], 200);
+    //         return response()->json([
+    //             'status' => true,
+    //             'message' => 'User Created Successfully',
+    //             //'token' => $user->createToken("API TOKEN")->plainTextToken
+    //         ], 200);
 
-        } catch (Exception $ex) {
-            return response()->json([
-                'status' => false,
-                'message' => $ex->getMessage()
-            ], 500);
-        }
-    }
+    //     } catch (Exception $ex) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => $ex->getMessage()
+    //         ], 500);
+    //     }
+    // }
     public function loginUser(Request $request)
     {
        // return $request->all();
         try {
-            // $validateUser = Validator::make($request->all(), 
-            // [
-            //     'email' => 'required|email',
-            //     'password' => 'required'
-            // ]);
-
-            // if($validateUser->fails()){
-            //     return response()->json([
-            //         'status' => false,
-            //         'message' => 'validation error',
-            //         'errors' => $validateUser->errors()
-            //     ], 401);
-            // }
+            
 
             if(!Auth::attempt($request->only(['email', 'password']))){
                 return response()->json([

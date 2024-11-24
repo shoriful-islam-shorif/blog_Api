@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1/')->group(function () {
     
-    Route::post('/register',[UserAuthController::class,'createUser']);
+    //Route::post('/register',[UserAuthController::class,'createUser']);
     Route::post('/login',[UserAuthController::class,'loginUser']);
 
     Route::middleware(['auth:sanctum'])->group(function(){
