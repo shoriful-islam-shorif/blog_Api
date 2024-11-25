@@ -26,12 +26,31 @@ class BlogController extends Controller
             ->orderby('blogs.id', 'desc')
             ->paginate(8);
 
+            $blogs->each(function ($blog) {
+                // Assuming the 'thumbnail' field contains the filename
+                if ($blog->thumbnail) {
+                    $blog->thumbnail_url = asset('post_thumbnails/' . $blog->thumbnail);
+                } else {
+                    // If there's no thumbnail, you can provide a default image or set it to null
+                    $blog->thumbnail_url = null;
+                }
+            });
+
         $recentPost = Blog::join('categories', 'categories.id', '=', 'blogs.category_id')
             ->select('blogs.*', 'categories.name as category_name')
             ->where('blogs.status', 1)
             ->orderby('blogs.id', 'desc')
             ->limit(8)
             ->get();
+        $recentPost->each(function ($blog) {
+                // Assuming the 'thumbnail' field contains the filename
+                if ($blog->thumbnail) {
+                    $blog->thumbnail_url = asset('post_thumbnails/' . $blog->thumbnail);
+                } else {
+                    // If there's no thumbnail, you can provide a default image or set it to null
+                    $blog->thumbnail_url = null;
+                }
+        });
 
         $categories = Category::all();
 
@@ -43,18 +62,35 @@ class BlogController extends Controller
     }
 
     public function single_post_view($id)
-    {
-        $blogs = Blog::join('categories', 'categories.id', '=', 'blogs.category_id')
-            ->select('blogs.*', 'categories.name as category_name')
-            ->where('blogs.id', $id)
-            ->first();
-    
-        return response()->json([
-            'status' => true,
-            'message' => 'Blog Post  retrieved successfully.',
-            'data' => $blogs,
-        ]);
-    }
+            {
+                    $blog = Blog::join('categories', 'categories.id', '=', 'blogs.category_id')
+                    ->select('blogs.*', 'categories.name as category_name')
+                    ->where('blogs.id', $id)
+                    ->first();
+
+                // Check if the blog post exists
+                if ($blog) {
+                    // Add the thumbnail URL if it exists
+                    if ($blog->thumbnail) {
+                        $blog->thumbnail_url = asset('post_thumbnails/' . $blog->thumbnail);
+                    } else {
+                        // If no thumbnail exists, set the thumbnail_url to null or a default image
+                        $blog->thumbnail_url = null;
+                    }
+
+                    return response()->json([
+                        'status' => true,
+                        'message' => 'Blog Post retrieved successfully.',
+                        'data' => $blog,
+                    ]);
+                }
+
+                // If blog post doesn't exist, return an error response
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Blog Post not found.',
+                ], 404);
+        }
 
     public function filter_by_category($id)
     {
@@ -65,6 +101,16 @@ class BlogController extends Controller
             ->orderby('blogs.id', 'desc')
             ->paginate(8);
 
+            $filtered_posts->each(function ($blog) {
+                // Assuming the 'thumbnail' field contains the filename
+                if ($blog->thumbnail) {
+                    $blog->thumbnail_url = asset('post_thumbnails/' . $blog->thumbnail);
+                } else {
+                    // If there's no thumbnail, you can provide a default image or set it to null
+                    $blog->thumbnail_url = null;
+                }
+            });
+
         $recentPost = Blog::join('categories', 'categories.id', '=', 'blogs.category_id')
             ->select('blogs.*', 'categories.name as category_name')
             ->where('blogs.status', 1)
@@ -72,6 +118,16 @@ class BlogController extends Controller
             ->orderby('blogs.id', 'desc')
             ->limit(8)
             ->get();
+
+         $recentPost->each(function ($blog) {
+                // Assuming the 'thumbnail' field contains the filename
+                if ($blog->thumbnail) {
+                    $blog->thumbnail_url = asset('post_thumbnails/' . $blog->thumbnail);
+                } else {
+                    // If there's no thumbnail, you can provide a default image or set it to null
+                    $blog->thumbnail_url = null;
+                }
+            });
 
         $categories = Category::all();
 

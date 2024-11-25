@@ -31,12 +31,23 @@ class BlogPostController extends Controller
             ->orderBy('blogs.id', 'desc')
             ->get();
 
+            $blogs->each(function ($blog) {
+                // Assuming the 'thumbnail' field contains the filename
+                if ($blog->thumbnail) {
+                    $blog->thumbnail_url = asset('post_thumbnails/' . $blog->thumbnail);
+                } else {
+                    // If there's no thumbnail, you can provide a default image or set it to null
+                    $blog->thumbnail_url = null;
+                }
+            });
+
         return response()->json([
             'status' => true,
             'message' => 'Posts retrieved successfully.',
             'data' => [
                 'categories' => $categories,
                 'Blog_posts' => $blogs,
+                
             ],
         ], 200);
     }
@@ -106,12 +117,16 @@ class BlogPostController extends Controller
     
     try {
         $blog = Blog::create($data);
-    
-        return response()->json([
-            'status' => true,
-            'message' => 'Post created successfully.',
-            'data' => $blog,
-        ], 201);
+    // Generate the full URL to the thumbnail
+    $thumbnailUrl = asset('post_thumbnails/' . $data['thumbnail']);
+
+    return response()->json([
+        'status' => true,
+        'message' => 'Post created successfully.',
+        'data' => $blog,
+        'thumbnail_url' => $thumbnailUrl,  // Include the thumbnail URL in the response
+    ], 201);
+
     } catch (\Exception $e) {
         return response()->json([
             'status' => false,
@@ -190,10 +205,13 @@ class BlogPostController extends Controller
 
         $blog->update($data);
 
+        //$thumbnailUrl = asset('post_thumbnails/' . $data['thumbnail']);
+
         return response()->json([
             'status' => true,
             'message' => 'Post updated successfully.',
             'data' => $blog,
+            //'thumbnail_url' => $thumbnailUrl,
         ], 200);
     }
 
