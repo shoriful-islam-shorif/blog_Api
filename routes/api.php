@@ -26,6 +26,8 @@ Route::prefix('v1/')->group(function () {
         Route::apiResource('blogs', BlogPostController::class);
         Route::post('/blog/{id}', [BlogPostController::class, 'update']);
         Route::put('blogs/status_role_change/{id}', [BlogPostController::class, 'toggleStatus']);
+        Route::get('/filter_category/{id}', [BlogPostController::class, 'filter_by_category']);
+
 
     });
    
@@ -36,9 +38,8 @@ Route::prefix('v1/')->group(function () {
     });
 
     //Blog view post
-    Route::get('/show_blog', [BlogController::class, 'index']);
-    Route::get('/single_blog_view/{id}', [BlogController::class, 'single_post_view']);
-    Route::get('/filter_category/{id}', [BlogController::class, 'filter_by_category']);
+    Route::get('/show_blog/{category_id}', [BlogController::class, 'index']);
+    Route::get('/single_blog_view/{custom_url}', [BlogController::class, 'single_post_view']);
 
 
 });
