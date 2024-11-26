@@ -63,7 +63,7 @@ class BlogPostController extends Controller
 
         $request->validate([
             'title' => 'required',
-           'custom_url' => 'nullable|url|max:255',
+           'custom_url' => 'nullable|string|max:255',
             'category_id' => 'required',
             'content' => 'required',
             'thumbnail' => 'required|image|mimes:jpg,jpeg,png,gif|max:2048',
@@ -81,86 +81,111 @@ class BlogPostController extends Controller
             
         ];
 
-    // Handle the custom URL
-    if ($request->custom_url) {
-        $data['custom_url'] = $this->generateUniqueCustomUrl($request->custom_url);
-    } else {
-        // Generate custom URL from the title if not provided
-        $data['custom_url'] = $this->generateUniqueCustomUrl(Str::slug($request->title));
-    }
-       
+            // Handle the custom URL
+            try {
+                if ($request->custom_url) {
+                    // Process the provided custom URL
+                    $data['custom_url'] = $this->generateUniqueCustomUrl($request->custom_url, true);
+                } else {
+                    // Generate custom URL from the title
+                    $data['custom_url'] = $this->generateUniqueCustomUrl($request->title);
+                }
+            } catch (\Exception $e) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Invalid custom URL provided.',
+                    'error' => $e->getMessage(),
+                ], 400);
+            }
 
-       // Handle the thumbnail file upload
-    if ($request->hasFile('thumbnail')) {
-        $file = $request->file('thumbnail');
-        $filename = time() . '.' . $file->getClientOriginalExtension();
+        // Handle the thumbnail file upload
+            if ($request->hasFile('thumbnail')) {
+                $file = $request->file('thumbnail');
+                $filename = time() . '.' . $file->getClientOriginalExtension();
 
+                try {
+                    // Resize and save the image
+                    $thumbnail = Image::make($file)->resize(600, 360);
+                    
+                    $thumbnail->save(public_path('post_thumbnails/' . $filename));
+                
+                    // Store the filename in the database
+                    $data['thumbnail'] = $filename;
+                    
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Failed to process and save the thumbnail image.',
+                        'error' => $e->getMessage(),
+                    ], 500);
+                }
+            }
+            //return $data;
+        
+    
         try {
-            // Resize and save the image
-            $thumbnail = Image::make($file)->resize(600, 360);
-            
-            $thumbnail->save(public_path('post_thumbnails/' . $filename));
-           
-            // Store the filename in the database
-            $data['thumbnail'] = $filename;
-            
+            $blog = Blog::create($data);
+        // Generate the full URL to the thumbnail
+        $thumbnailUrl = asset('post_thumbnails/' . $data['thumbnail']);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Post created successfully.',
+            'data' => $blog,
+            'thumbnail_url' => $thumbnailUrl,  // Include the thumbnail URL in the response
+        ], 200);
+
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' => 'Failed to process and save the thumbnail image.',
+                'message' => 'Failed to create the blog post.',
                 'error' => $e->getMessage(),
             ], 500);
         }
     }
-    //return $data;
-    
-    
-    try {
-        $blog = Blog::create($data);
-    // Generate the full URL to the thumbnail
-    $thumbnailUrl = asset('post_thumbnails/' . $data['thumbnail']);
 
-    return response()->json([
-        'status' => true,
-        'message' => 'Post created successfully.',
-        'data' => $blog,
-        'thumbnail_url' => $thumbnailUrl,  // Include the thumbnail URL in the response
-    ], 201);
+    private function generateUniqueCustomUrl($inputUrl, $isFullUrl = false)
+    {
+        if ($isFullUrl) {
+                // Ensure the URL starts with http:// or https://
+                if (!preg_match('/^(http:\/\/|https:\/\/)/', $inputUrl)) {
+                    $inputUrl = 'https://' . $inputUrl;
+            }
 
-    } catch (\Exception $e) {
-        return response()->json([
-            'status' => false,
-            'message' => 'Failed to create the blog post.',
-            'error' => $e->getMessage(),
-        ], 500);
+            // Validate the URL after adding the scheme
+            if (!filter_var($inputUrl, FILTER_VALIDATE_URL)) {
+                 throw new \Exception('The provided custom URL is not valid.');
+            }
+
+            // Keep the full URL as-is, but ensure uniqueness in the database
+            $uniqueUrl = $inputUrl;
+            $counter = 1;
+
+            while (Blog::where('custom_url', $uniqueUrl)->exists()) {
+                // Append a counter to ensure uniqueness
+                $uniqueUrl = preg_replace('/(-\d+)?$/', '-' . $counter, $inputUrl);
+                $counter++;
+            }
+
+            return $uniqueUrl;
+        } else {
+            // Generate a slug if not a full URL
+            $baseSlug = Str::slug($inputUrl);
+            $uniqueSlug = $baseSlug;
+            $counter = 1;
+
+            while (Blog::where('custom_url', $uniqueSlug)->exists()) {
+                $uniqueSlug = $baseSlug . '-' . $counter;
+                $counter++;
+            }
+
+            return $uniqueSlug;
+        }
     }
-    }
 
-    private function generateUniqueCustomUrl($customUrl)
-{
-    $baseUrl = Str::slug($customUrl);
-    $uniqueUrl = $baseUrl;
-    $counter = 1;
-
-    while (Blog::where('custom_url', $uniqueUrl)->exists()) {
-        $uniqueUrl = $baseUrl . '-' . $counter;
-        $counter++;
-    }
-
-    return $uniqueUrl;
-}
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function update(Request $request, $id)
     {
-       // return $request;
-
+        // Find the blog post
         $blog = Blog::find($id);
         if (!$blog) {
             return response()->json([
@@ -168,53 +193,67 @@ class BlogPostController extends Controller
                 'message' => 'Post not found.',
             ], 404);
         }
-
+    
+        // Validate the request
         $request->validate([
             'title' => 'required',
-           'custom_url' => 'nullable|url|max:255',
+            'custom_url' => 'nullable|url|max:255',
             'category_id' => 'required',
             'content' => 'required',
             'thumbnail' => 'nullable|image|mimes:jpg,jpeg,png,gif|max:2048',
             'status' => 'required|in:0,1',
         ]);
-
+    
         $data = [
             'title' => $request->title,
-            'custom_url' => $request->custom_url,
             'category_id' => $request->category_id,
             'content' => $request->content,
-            //'user_id'=>$request->user_id,
             'user_id' => Auth::id(),
             'status' => $request->status,
         ];
-
+    
+        // Handle the custom URL
+        if ($request->custom_url) {
+            $data['custom_url'] = $this->generateUniqueCustomUrl($request->custom_url, true);
+        } else {
+            $data['custom_url'] = $this->generateUniqueCustomUrl($request->title);
+        }
+    
+        // Handle thumbnail file upload
         if ($request->hasFile('thumbnail')) {
+            // Delete the old thumbnail if it exists
             if ($blog->thumbnail) {
                 File::delete(public_path('post_thumbnails/' . $blog->thumbnail));
             }
-
+    
             $file = $request->file('thumbnail');
             $filename = time() . '.' . $file->getClientOriginalExtension();
-
+    
             // Resize and save the image
-            $thumbnail = Image::make($file);
-            $thumbnail->resize(600, 360)->save(public_path('post_thumbnails/' . $filename));
-
-            $data['thumbnail'] = $filename;
+            $thumbnail = Image::make($file)->resize(600, 360);
+            $thumbnail->save(public_path('post_thumbnails/' . $filename));
+    
+            $data['thumbnail'] = $filename; // Update with new filename
+        } else {
+            // Preserve the existing thumbnail if none is uploaded
+            $data['thumbnail'] = $blog->thumbnail;
         }
-
+    
+        // Update the blog post
         $blog->update($data);
-
-        //$thumbnailUrl = asset('post_thumbnails/' . $data['thumbnail']);
-
+    
+        // Generate the full URL to the thumbnail
+        $thumbnailUrl = $data['thumbnail'] ? asset('post_thumbnails/' . $data['thumbnail']) : null;
+    
         return response()->json([
             'status' => true,
             'message' => 'Post updated successfully.',
             'data' => $blog,
-            //'thumbnail_url' => $thumbnailUrl,
+            'thumbnail_url' => $thumbnailUrl, // Provide the thumbnail URL or null
         ], 200);
     }
-
+    
+    
     /**
      * Remove the specified resource from storage.
      *
