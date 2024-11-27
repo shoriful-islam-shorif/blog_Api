@@ -34,7 +34,7 @@ class CategoryController extends Controller
         {
            // return $request->all();
             $request->validate([
-                'name' => 'required',
+               'name' => 'required|unique:categories,name|max:255',
             ]);
             
     
@@ -71,7 +71,6 @@ class CategoryController extends Controller
     
             $request->validate([
                 'name' => 'required|unique:categories,name,' . $category->id . '|max:255',
-                //'description' => 'required',
             ]);
     
             $data = [
