@@ -26,7 +26,7 @@ Route::prefix('v1/')->group(function () {
         Route::apiResource('blogs', BlogPostController::class);
         Route::post('/blog/{id}', [BlogPostController::class, 'update']);
         Route::put('blogs/status_role_change/{id}', [BlogPostController::class, 'toggleStatus']);
-        Route::get('/filter_category/{id}', [BlogPostController::class, 'filter_by_category']);
+        Route::get('/filter_category/{id?}', [BlogPostController::class, 'filter_by_category']);
 
 
     });

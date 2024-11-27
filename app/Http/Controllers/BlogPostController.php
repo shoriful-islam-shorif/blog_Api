@@ -23,35 +23,35 @@ class BlogPostController extends Controller
          *
          * @return \Illuminate\Http\JsonResponse
          */
-        public function index()
-        {
-            $categories = Category::all();
+        // public function index()
+        // {
+        //     $categories = Category::all();
 
-            $blogs = Blog::join('categories', 'categories.id', '=', 'blogs.category_id')
-                ->select('blogs.*', 'categories.name as category_name')
-                ->orderBy('blogs.created_at', 'desc')
-                ->get();
+        //     $blogs = Blog::join('categories', 'categories.id', '=', 'blogs.category_id')
+        //         ->select('blogs.*', 'categories.name as category_name')
+        //         ->orderBy('blogs.created_at', 'desc')
+        //         ->get();
 
-                $blogs->each(function ($blog) {
-                    // Assuming the 'thumbnail' field contains the filename
-                    if ($blog->thumbnail) {
-                        $blog->thumbnail_url = asset('post_thumbnails/' . $blog->thumbnail);
-                    } else {
-                        // If there's no thumbnail, you can provide a default image or set it to null
-                        $blog->thumbnail_url = null;
-                    }
-                });
+        //         $blogs->each(function ($blog) {
+        //             // Assuming the 'thumbnail' field contains the filename
+        //             if ($blog->thumbnail) {
+        //                 $blog->thumbnail_url = asset('post_thumbnails/' . $blog->thumbnail);
+        //             } else {
+        //                 // If there's no thumbnail, you can provide a default image or set it to null
+        //                 $blog->thumbnail_url = null;
+        //             }
+        //         });
 
-            return response()->json([
-                'status' => true,
-                'message' => 'Posts retrieved successfully.',
-                'data' => [
-                    'categories' => $categories,
-                    'Blog_posts' => $blogs,
+        //     return response()->json([
+        //         'status' => true,
+        //         'message' => 'Posts retrieved successfully.',
+        //         'data' => [
+        //             'categories' => $categories,
+        //             'Blog_posts' => $blogs,
                     
-                ],
-            ], 200);
-        }
+        //         ],
+        //     ], 200);
+        // }
 
         /**
          * Store a newly created resource in storage.
@@ -126,14 +126,12 @@ class BlogPostController extends Controller
         
             try {
                 $blog = Blog::create($data);
-            // Generate the full URL to the thumbnail
-            $thumbnailUrl = asset('post_thumbnails/' . $data['thumbnail']);
+           
 
             return response()->json([
                 'status' => true,
                 'message' => 'Post created successfully.',
                 'data' => $blog,
-                'thumbnail_url' => $thumbnailUrl,  // Include the thumbnail URL in the response
             ], 200);
 
             } catch (\Exception $e) {
@@ -231,13 +229,13 @@ class BlogPostController extends Controller
             $blog->update($data);
         
             // Generate the full URL to the thumbnail
-            $thumbnailUrl = $data['thumbnail'] ? asset('post_thumbnails/' . $data['thumbnail']) : null;
+          //  $thumbnailUrl = $data['thumbnail'] ? asset('post_thumbnails/' . $data['thumbnail']) : null;
         
             return response()->json([
                 'status' => true,
                 'message' => 'Post updated successfully.',
                 'data' => $blog,
-                'thumbnail_url' => $thumbnailUrl, // Provide the thumbnail URL or null
+               // 'thumbnail_url' => $thumbnailUrl, // Provide the thumbnail URL or null
             ], 200);
         }
         
@@ -316,30 +314,21 @@ class BlogPostController extends Controller
             ], 200);
         }
 
-        public function filter_by_category($id)
+        public function filter_by_category($id=null)
         {
-            //return $id;
-            $filtered_posts = Blog::join('categories', 'categories.id', '=', 'blogs.category_id')
-                ->select('blogs.*', 'categories.name as category_name')
-                ->where('blogs.status', 1)
-                ->where('blogs.category_id', $id)
-                ->orderby('blogs.id', 'desc')
-                ->paginate(8);
 
-                $filtered_posts->each(function ($blog) {
-                    // Assuming the 'thumbnail' field contains the filename
-                    if ($blog->thumbnail) {
-                        $blog->thumbnail_url = asset('post_thumbnails/' . $blog->thumbnail);
-                    } else {
-                        // If there's no thumbnail, you can provide a default image or set it to null
-                        $blog->thumbnail_url = null;
-                    }
-                });
+ 
+            $blogs = Blog::when(!is_null($id), function ($query) use ($id) {
+                // If $id is not null, filter blogs by the given category_id
+                $query->where('category_id', $id);
+            })
+            ->with('category') // Load the related category for all blogs
+            ->get();
 
             return response()->json([
                 'status' => true,
                 'message' => 'Blog Posts filtered by category.',
-                'data' =>$filtered_posts,
+                'data' => $blogs,
             ]);
         }
 
