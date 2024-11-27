@@ -203,27 +203,30 @@ class BlogPostController extends Controller
             // Generate a slug from the title if custom URL is not provided
             $data['custom_url'] = $this->generateUniqueCustomUrlUpdate($request->title, $blog->id);
         }
+        $parsedUrl = parse_url($blog->thumbnail);
 
+        // Use pathinfo to get the filename
+        $sliceFileName = pathinfo($parsedUrl['path'], PATHINFO_BASENAME);
+        $data['thumbnail'] = $sliceFileName;
         
-            // Handle thumbnail file upload
-            if ($request->hasFile('thumbnail')) {
-                // Delete the old thumbnail if it exists
-                if ($blog->thumbnail) {
-                    File::delete(public_path('post_thumbnails/' . $blog->thumbnail));
-                }
-        
-                $file = $request->file('thumbnail');
-                $filename = time() . '.' . $file->getClientOriginalExtension();
-        
-                // Resize and save the image
-                $thumbnail = Image::make($file)->resize(600, 360);
-                $thumbnail->save(public_path('post_thumbnails/' . $filename));
-        
-                $data['thumbnail'] = $filename; // Update with new filename
-            } else {
-                // Preserve the existing thumbnail if none is uploaded
-                $data['thumbnail'] = $blog->thumbnail;
+            // Handle thumbnail image upload
+        if ($request->hasFile('thumbnail')) {
+            // Delete the old thumbnail if it exists
+            if ($blog->thumbnail) {
+                File::delete(public_path('post_thumbnails/' . $blog->thumbnail));
             }
+
+            // Get the new thumbnail file
+            $file = $request->file('thumbnail');
+            $filename = time() . '.' . $file->getClientOriginalExtension();
+
+            // Resize and save the image
+            $thumbnail = Image::make($file)->resize(600, 360); // Resize as needed
+            $thumbnail->save(public_path('post_thumbnails/' . $filename));
+
+            // Update the data with the new filename
+            $data['thumbnail'] = $filename;
+        } 
         
             // Update the blog post
             $blog->update($data);
