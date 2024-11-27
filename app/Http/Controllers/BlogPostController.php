@@ -326,7 +326,7 @@ class BlogPostController extends Controller
                 $query->where('category_id', $id);
             })
             ->with('category') // Load the related category for all blogs
-            ->get();
+            ->paginate(8);
 
             return response()->json([
                 'status' => true,
