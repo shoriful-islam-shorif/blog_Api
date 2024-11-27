@@ -336,25 +336,10 @@ class BlogPostController extends Controller
                     }
                 });
 
-            $recentPost = Blog::join('categories', 'categories.id', '=', 'blogs.category_id')
-                ->select('blogs.*', 'categories.name as category_name')
-                ->where('blogs.status', 1)
-                ->where('blogs.category_id', $id)
-                ->orderby('blogs.id', 'desc')
-                ->limit(8)
-                ->get();
-
-            $categories = Category::all();
-
-            // $category_with_post_count= Category::withCount(['blogs' => function ($query) {
-            //     $query->where('status', 1); 
-            // }])
-            // ->get();
-
             return response()->json([
                 'status' => true,
                 'message' => 'Blog Posts filtered by category.',
-                'data' => compact('filtered_posts', 'recentPost', 'categories',),
+                'data' =>$filtered_posts,
             ]);
         }
 
