@@ -23,35 +23,20 @@ class BlogPostController extends Controller
          *
          * @return \Illuminate\Http\JsonResponse
          */
-        // public function index()
-        // {
-        //     $categories = Category::all();
+        public function index()
+        {
 
-        //     $blogs = Blog::join('categories', 'categories.id', '=', 'blogs.category_id')
-        //         ->select('blogs.*', 'categories.name as category_name')
-        //         ->orderBy('blogs.created_at', 'desc')
-        //         ->get();
+            $blogs = Blog::join('categories', 'categories.id', '=', 'blogs.category_id')
+                ->select('blogs.*', 'categories.name as category_name')
+                ->orderBy('blogs.created_at', 'desc')
+                ->paginate(8);
 
-        //         $blogs->each(function ($blog) {
-        //             // Assuming the 'thumbnail' field contains the filename
-        //             if ($blog->thumbnail) {
-        //                 $blog->thumbnail_url = asset('post_thumbnails/' . $blog->thumbnail);
-        //             } else {
-        //                 // If there's no thumbnail, you can provide a default image or set it to null
-        //                 $blog->thumbnail_url = null;
-        //             }
-        //         });
-
-        //     return response()->json([
-        //         'status' => true,
-        //         'message' => 'Posts retrieved successfully.',
-        //         'data' => [
-        //             'categories' => $categories,
-        //             'Blog_posts' => $blogs,
-                    
-        //         ],
-        //     ], 200);
-        // }
+            return response()->json([
+                'status' => true,
+                'message' => 'Posts retrieved successfully.',
+                'data' => $blogs,
+            ], 200);
+        }
 
         /**
          * Store a newly created resource in storage.
@@ -64,7 +49,7 @@ class BlogPostController extends Controller
 
             $request->validate([
                 'title' => 'required',
-                'custom_url' => 'nullable|string|max:255|unique:blogs,custom_url',
+                'custom_url' => 'required|string|max:255|unique:blogs,custom_url',
                 'category_id' => 'required',
                 'content' => 'required',
                 'thumbnail' => 'required|image|mimes:jpg,jpeg,png,gif|max:2048',
@@ -82,22 +67,6 @@ class BlogPostController extends Controller
                 
             ];
 
-                // Handle the custom URL
-        try {
-            if ($request->custom_url) {
-                // Use the provided custom URL as-is (slug validation ensures safety)
-                $data['custom_url'] = $this->generateUniqueCustomUrl($request->custom_url);
-            } else {
-                // Generate a URL slug from the title
-                $data['custom_url'] = $this->generateUniqueCustomUrl(Str::slug($request->title));
-            }
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Invalid custom URL provided.',
-                'error' => $e->getMessage(),
-            ], 400);
-        }
 
             // Handle the thumbnail file upload
                 if ($request->hasFile('thumbnail')) {
@@ -139,44 +108,40 @@ class BlogPostController extends Controller
                     'status' => false,
                     'message' => 'Failed to create the blog post.',
                     'error' => $e->getMessage(),
+                    'data' => Null,
                 ], 500);
             }
         }
 
-        private function generateUniqueCustomUrl($inputUrl)
-    {
-        // Generate a base slug directly from the input URL
-        $baseSlug = Str::slug($inputUrl);
+    
+    public function show($id){
+        $blog = Blog::join('categories', 'categories.id', '=', 'blogs.category_id')
+        ->select('blogs.*', 'categories.name as category_name')
+        ->where('blogs.id', $id)
+        ->first();
 
-        // Ensure the slug is unique
-        $uniqueSlug = $baseSlug;
-        $counter = 1;
-
-        while (Blog::where('custom_url', $uniqueSlug)->exists()) {
-            $uniqueSlug = $baseSlug . '-' . $counter;
-            $counter++;
+        if (!$blog) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Blog not found.',
+                'data'   =>null,
+            ], 404); // Return 404 status if the blog is not found
         }
 
-        return $uniqueSlug;
+        return response()->json([
+            'status' => true,
+            'message' => 'Data retrieved successfully.',
+            'data' => $blog,
+        ],200);
     }
 
-
-        public function update(Request $request, $id)
-        {
-            // Find the blog post
-            $blog = Blog::find($id);
-            if (!$blog) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Post not found.',
-                ], 404);
-            }
-        
+        public function update(Request $request, Blog $blog)
+        {        
             // Validate the request
             $request->validate([
                 'title' => 'required',
                 'custom_url' => [
-                'nullable',
+                'required',
                 'string',
                 'max:255',
                 Rule::unique('blogs', 'custom_url')->ignore($blog->id), // Ensure custom_url is unique excluding the current blog
@@ -189,20 +154,14 @@ class BlogPostController extends Controller
         
             $data = [
                 'title' => $request->title,
+                'custom_url' => $request->custom_url,
                 'category_id' => $request->category_id,
                 'content' => $request->content,
                 'user_id' => Auth::id(),
                 'status' => $request->status,
             ];
         
-            // Handle the custom URL
-        if ($request->custom_url) {
-            // Generate a unique custom URL
-            $data['custom_url'] = $this->generateUniqueCustomUrlUpdate($request->custom_url, $blog->id);
-        } else {
-            // Generate a slug from the title if custom URL is not provided
-            $data['custom_url'] = $this->generateUniqueCustomUrlUpdate($request->title, $blog->id);
-        }
+       
         $parsedUrl = parse_url($blog->thumbnail);
 
         // Use pathinfo to get the filename
@@ -242,27 +201,6 @@ class BlogPostController extends Controller
             ], 200);
         }
         
-        private function generateUniqueCustomUrlUpdate($customUrl, $currentId = null)
-            {
-                // Use the input as a base slug directly
-                $baseSlug = Str::slug($customUrl);
-                $uniqueSlug = $baseSlug;
-                $counter = 1;
-
-                // Check uniqueness, excluding the current blog ID if provided
-                while (
-                    Blog::where('custom_url', $uniqueSlug)
-                        ->when($currentId, fn($query) => $query->where('id', '!=', $currentId))
-                        ->exists()
-                ) {
-                    $uniqueSlug = $baseSlug . '-' . $counter;
-                    $counter++;
-                }
-
-                return $uniqueSlug;
-            }
-
-
         
         
         /**
@@ -279,11 +217,17 @@ class BlogPostController extends Controller
                     return response()->json([
                         'status' => false,
                         'message' => 'Post not found.',
+                        'data'    =>null,
                     ], 404);
                 }
 
+                $parsedUrl = parse_url($blog->thumbnail);
+
+                // Use pathinfo to get the filename
+                $sliceFileName = pathinfo($parsedUrl['path'], PATHINFO_BASENAME);
+
                 if ($blog->thumbnail) {
-                    File::delete(public_path('post_thumbnails/' . $blog->thumbnail));
+                    File::delete(public_path('post_thumbnails/' . $sliceFileName));
                 }
 
                 $blog->delete();
@@ -291,31 +235,32 @@ class BlogPostController extends Controller
                 return response()->json([
                     'status' => true,
                     'message' => 'blog deleted successfully.',
+                    'data'   =>null,
                 ], 200);
             }
 
 
 
-        public function toggleStatus($id)
-        { 
-            $blog = Blog::find($id);
+        // public function toggleStatus($id)
+        // { 
+        //     $blog = Blog::find($id);
 
-            if (!$blog) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Post not found.',
-                ], 404);
-            }
+        //     if (!$blog) {
+        //         return response()->json([
+        //             'status' => false,
+        //             'message' => 'Post not found.',
+        //         ], 404);
+        //     }
 
-            $blog->status = $blog->status == 1 ? 0 : 1; // Toggle status
-            $blog->save();
+        //     $blog->status = $blog->status == 1 ? 0 : 1; // Toggle status
+        //     $blog->save();
 
-            return response()->json([
-                'status' => true,
-                'message' => 'Post status updated successfully.',
-                'data' => $blog,
-            ], 200);
-        }
+        //     return response()->json([
+        //         'status' => true,
+        //         'message' => 'Post status updated successfully.',
+        //         'data' => $blog,
+        //     ], 200);
+        // }
 
         public function filter_by_category($id=null)
         {

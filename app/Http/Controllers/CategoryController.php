@@ -66,6 +66,7 @@ class CategoryController extends Controller
                 return response()->json([
                     'status' => false,
                     'message' => 'Category not found',
+                    'data'   =>null,
                 ], 404);
             }
     
@@ -101,6 +102,7 @@ class CategoryController extends Controller
                 return response()->json([
                     'status' => false,
                     'message' => 'Category not found',
+                    'data'    =>null,
                 ], 404);
             }
     
@@ -109,6 +111,7 @@ class CategoryController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'Category deleted successfully',
+                'data'   =>null,
             ], 200);
         }
     
