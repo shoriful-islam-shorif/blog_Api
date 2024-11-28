@@ -16,12 +16,13 @@ use Intervention\Image\Facades\Image;
 
 class BlogController extends Controller
 {
-    public function index()
+    public function index($category_id)
 {
    
     $blogs = Blog::join('categories', 'categories.id', '=', 'blogs.category_id')
         ->select('blogs.*', 'categories.name as category_name')
         ->where('blogs.status', 1)
+        ->where('blogs.category_id',$category_id )
         ->orderby('blogs.created_at', 'desc')
         ->paginate(8); // or you can use get() for all blogs in that category
 
