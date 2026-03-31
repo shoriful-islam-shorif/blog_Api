@@ -24,7 +24,7 @@ class BlogController extends Controller
         ->where('blogs.status', 1)
         ->where('blogs.category_id',$category_id )
         ->orderby('blogs.created_at', 'desc')
-        ->paginate(8); 
+        ->paginate(15); 
 
 
     return response()->json([

@@ -29,7 +29,7 @@ class BlogPostController extends Controller
             $blogs = Blog::join('categories', 'categories.id', '=', 'blogs.category_id')
                 ->select('blogs.*', 'categories.name as category_name')
                 ->orderBy('blogs.created_at', 'desc')
-                ->paginate(8);
+                ->paginate(15);
 
             return response()->json([
                 'status' => true,
@@ -271,7 +271,7 @@ class BlogPostController extends Controller
                 $query->where('category_id', $id);
             })
             ->with('category') // Load the related category for all blogs
-            ->paginate(8);
+            ->paginate(15);
 
             return response()->json([
                 'status' => true,
